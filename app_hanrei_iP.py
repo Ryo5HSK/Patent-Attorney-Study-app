@@ -12,7 +12,6 @@ if not st.session_state.auth:
     if st.button("ログイン"):
         if pw == PASSWORD:
             st.session_state.auth = True
-            st.experimental_rerun()
         else:
             st.error("パスワードが違います")
     st.stop()
