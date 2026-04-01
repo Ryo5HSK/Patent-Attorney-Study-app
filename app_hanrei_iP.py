@@ -61,16 +61,18 @@ if st.button("問題を出す"):
 
     if due_questions:
         q = random.choice(due_questions)
-        st.session_state.current = q["idx"]
+        st.session_state.current = None
+        st.session_state.recall_row = q["row"]
         st.session_state.queue.remove(q)
+
     elif not st.session_state.data.empty:
-        st.session_state.current = random.choice(st.session_state.data.index)
+        st.session_state.current = random.randrange(len(st.session_state.data))
 
     st.session_state.show_answer = False
 
 # ===== 問題表示 =====
 if st.session_state.current is not None:
-    row = st.session_state.data.loc[st.session_state.current]
+    row = st.session_state.data.iloc[st.session_state.current]
 
     st.subheader("問題")
     st.markdown(row.iloc[1].replace("\n", "  \n"))
@@ -80,7 +82,7 @@ if st.session_state.current is not None:
 
 # ===== 解答表示 =====
 if st.session_state.show_answer:
-    row = st.session_state.data.loc[st.session_state.current]
+    row = st.session_state.data.iloc[st.session_state.current]
 
     st.subheader("解答")
     st.markdown(row.iloc[2].replace("\n", "  \n"))
@@ -95,7 +97,9 @@ if st.session_state.show_answer:
             df.at[idx, df.columns[3]] = new_rank
             df.to_excel(file_name, index=False)
 
-            st.session_state.data = st.session_state.data.drop(idx)
+            st.session_state.data = st.session_state.data.drop(
+    st.session_state.data.index[st.session_state.current]
+).reset_index(drop=True)
             st.session_state.current = None
             st.session_state.show_answer = False
 
@@ -112,11 +116,10 @@ if st.session_state.show_answer:
                 delay = random.randint(2, 3)
 
             st.session_state.queue.append({
-                "idx": st.session_state.current,
-                "due": st.session_state.step + delay
-        })
+    "row": row,
+    "due": st.session_state.step + delay
+})
 
-            st.session_state.data = st.session_state.data.drop(st.session_state.current)
             st.session_state.current = None
             st.session_state.show_answer = False
 
