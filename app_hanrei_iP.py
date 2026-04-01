@@ -99,7 +99,7 @@ if st.session_state.show_answer:
             st.session_state.current = None
             st.session_state.show_answer = False
 
-            st.experimental_rerun()
+            st.rerun()
 
     elif result == "n":
         if st.button("次の問題へ"):
@@ -120,7 +120,7 @@ if st.session_state.show_answer:
             st.session_state.current = None
             st.session_state.show_answer = False
 
-            st.experimental_rerun()
+            st.rerun()
 
 # ===== 全問終了時の表示 =====
 if st.session_state.data.empty and not st.session_state.queue:
@@ -129,5 +129,5 @@ if st.session_state.data.empty and not st.session_state.queue:
         del st.session_state.data
         del st.session_state.current
         del st.session_state.show_answer
-        st.experimental_rerun()
+        st.rerun()
     st.stop()
