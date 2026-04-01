@@ -105,23 +105,23 @@ if st.session_state.show_answer:
     elif result == "n":
         if st.button("次の問題へ"):
 
-        remaining = len(st.session_state.data) + len(st.session_state.queue)
+            remaining = len(st.session_state.data) + len(st.session_state.queue)
 
-        if remaining <= 2:
-            delay = 1
-        else:
-            delay = random.randint(2, 3)
+            if remaining <= 2:
+                delay = 1
+            else:
+                delay = random.randint(2, 3)
 
-        st.session_state.queue.append({
-            "idx": st.session_state.current,
-            "due": st.session_state.step + delay
+            st.session_state.queue.append({
+                "idx": st.session_state.current,
+                "due": st.session_state.step + delay
         })
 
-        st.session_state.data = st.session_state.data.drop(st.session_state.current)
-        st.session_state.current = None
-        st.session_state.show_answer = False
+            st.session_state.data = st.session_state.data.drop(st.session_state.current)
+            st.session_state.current = None
+            st.session_state.show_answer = False
 
-        st.experimental_rerun()
+            st.experimental_rerun()
 
 # ===== 全問終了時の表示 =====
 if st.session_state.data.empty and not st.session_state.queue:
