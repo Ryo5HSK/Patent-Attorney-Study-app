@@ -1,9 +1,14 @@
 import streamlit as st
 import pandas as pd
 import random
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 PASSWORD = "1203"
 
+SHEET_NAME = "弁理士試験_判例_論点"  # ←ここをあなたのシート名に変更
+
+# ===== 認証 =====
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -16,11 +21,31 @@ if not st.session_state.auth:
             st.error("パスワードが違います")
     st.stop()
 
-file_name = "復習用問題_判例_論点.xlsx"
+# ===== Google Sheets接続 =====
+@st.cache_resource
+def get_gspread_client():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        st.secrets["gcp_service_account"], scope
+    )
+    return gspread.authorize(creds)
 
-@st.cache_data
+# ===== データ読み込み =====
+@st.cache_data(ttl=60)
 def load_data():
-    return pd.read_excel(file_name)
+    client = get_gspread_client()
+    sheet = client.open(SHEET_NAME).sheet1
+    data = sheet.get_all_records()
+    return pd.DataFrame(data)
+
+# ===== データ保存 =====
+def save_data(df):
+    client = get_gspread_client()
+    sheet = client.open(SHEET_NAME).sheet1
+    sheet.update([df.columns.values.tolist()] + df.values.tolist())
 
 df = load_data()
 
@@ -37,7 +62,6 @@ if "data" not in st.session_state:
         df_B.sample(n=min(3, len(df_B))),
         df_C.sample(n=min(6, len(df_C)))
     ])
-
 
 if "current" not in st.session_state:
     st.session_state.current = None
@@ -95,11 +119,14 @@ if st.session_state.show_answer:
         if st.button("更新して次へ"):
             idx = row.name
             df.at[idx, df.columns[3]] = new_rank
-            df.to_excel(file_name, index=False)
+
+            # ★ Excel保存 → Sheets保存に変更
+            save_data(df)
 
             st.session_state.data = st.session_state.data.drop(
-    st.session_state.data.index[st.session_state.current]
-).reset_index(drop=True)
+                st.session_state.data.index[st.session_state.current]
+            ).reset_index(drop=True)
+
             st.session_state.current = None
             st.session_state.show_answer = False
 
@@ -116,9 +143,9 @@ if st.session_state.show_answer:
                 delay = random.randint(2, 3)
 
             st.session_state.queue.append({
-    "row": row,
-    "due": st.session_state.step + delay
-})
+                "row": row,
+                "due": st.session_state.step + delay
+            })
 
             st.session_state.current = None
             st.session_state.show_answer = False
