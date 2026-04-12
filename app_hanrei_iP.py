@@ -194,6 +194,7 @@ if st.session_state.show_answer:
 # ===== 全問終了時の表示 =====
 if (
     "data" in st.session_state
+    and len(st.session_state.data) == 0
     and not st.session_state.data.empty
     and not st.session_state.queue
 ):
