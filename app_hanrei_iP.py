@@ -63,47 +63,43 @@ if "data" not in st.session_state:
     df_B = df[df.iloc[:, 3] == 'B']
     df_C = df[df.iloc[:, 3] == 'C']
 
-# ===== 安全サンプリング =====
+    # ===== 基本サンプリング（最大値で取得）=====
     sample_A = safe_sample(df_A, 1)
     sample_B = safe_sample(df_B, 3)
     sample_C = safe_sample(df_C, 6)
 
-# ===== Cが不足する場合の補完ロジック =====
+    # ===== 初期セット =====
+    result = pd.concat([sample_A, sample_B, sample_C])
+
     total_needed = 10
-    current_total = len(sample_A) + len(sample_B) + len(sample_C)
 
-    if current_total < total_needed:
-        shortage = total_needed - current_total
-
-    # Cから優先的に補充（残りC）
+    # ===== 不足分をCで補完 =====
+    if len(result) < total_needed:
         remaining_C = df_C.drop(sample_C.index)
-        extra_C = safe_sample(remaining_C, shortage)
+        extra_C = safe_sample(remaining_C, total_needed - len(result))
+        result = pd.concat([result, extra_C])
 
-        sample_C = pd.concat([sample_C, extra_C])
-        current_total = len(sample_A) + len(sample_B) + len(sample_C)
+    # ===== まだ不足ならBで補完 =====
+    if len(result) < total_needed:
+        remaining_B = df_B.drop(sample_B.index)
+        extra_B = safe_sample(remaining_B, total_needed - len(result))
+        result = pd.concat([result, extra_B])
 
-    # それでも足りない場合（初期段階など）
-        if current_total < total_needed:
-            shortage = total_needed - current_total
+    # ===== まだ不足ならAで補完 =====
+    if len(result) < total_needed:
+        remaining_A = df_A.drop(sample_A.index)
+        extra_A = safe_sample(remaining_A, total_needed - len(result))
+        result = pd.concat([result, extra_A])
 
-            remaining_B = df_B.drop(sample_B.index)
-            extra_B = safe_sample(remaining_B, shortage)
+    # ===== 最後は全体から補完（保険）=====
+    if len(result) < total_needed:
+        used_index = result.index
+        remaining_all = df.drop(used_index, errors="ignore")
+        extra_all = safe_sample(remaining_all, total_needed - len(result))
+        result = pd.concat([result, extra_all])
 
-            sample_B = pd.concat([sample_B, extra_B])
-            current_total = len(sample_A) + len(sample_B) + len(sample_C)
-
-    # 最終的にも足りない場合（ほぼ全C初期状態）
-            if current_total < total_needed:
-                shortage = total_needed - current_total
-
-                used_index = pd.concat([sample_A, sample_B, sample_C]).index
-                remaining_all = df.drop(used_index, errors="ignore")
-                extra_all = safe_sample(remaining_all, shortage)
-
-                st.session_state.data = pd.concat([sample_A, sample_B, sample_C, extra_all])
-
-            else:
-                st.session_state.data = pd.concat([sample_A, sample_B, sample_C])
+    # ===== 最終代入（必ず実行される）=====
+    st.session_state.data = result.sample(frac=1).reset_index(drop=True)
     
 
 if "current" not in st.session_state:
