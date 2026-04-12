@@ -19,6 +19,9 @@ if not st.session_state.auth:
             st.session_state.auth = True
         else:
             st.error("パスワードが違います")
+
+        st.rerun()
+
     st.stop()
 
 # ===== Google Sheets接続 =====
@@ -51,17 +54,52 @@ df = load_data()
 
 # ===== 初期化 =====
 if "data" not in st.session_state:
-    filtered_df = df[(df.iloc[:, 0] >= 1) & (df.iloc[:, 0] <= 3)]
+    df_A = df[df.iloc[:, 3] == 'A']
+    df_B = df[df.iloc[:, 3] == 'B']
+    df_C = df[df.iloc[:, 3] == 'C']
 
-    df_A = filtered_df[filtered_df.iloc[:, 3] == 'A']
-    df_B = filtered_df[filtered_df.iloc[:, 3] == 'B']
-    df_C = filtered_df[filtered_df.iloc[:, 3] == 'C']
+# ===== 安全サンプリング =====
+    sample_A = safe_sample(df_A, 1)
+    sample_B = safe_sample(df_B, 3)
+    sample_C = safe_sample(df_C, 6)
 
-    st.session_state.data = pd.concat([
-        df_A.sample(n=min(1, len(df_A))),
-        df_B.sample(n=min(3, len(df_B))),
-        df_C.sample(n=min(6, len(df_C)))
-    ])
+# ===== Cが不足する場合の補完ロジック =====
+    total_needed = 10
+    current_total = len(sample_A) + len(sample_B) + len(sample_C)
+
+    if current_total < total_needed:
+        shortage = total_needed - current_total
+
+    # Cから優先的に補充（残りC）
+        remaining_C = df_C.drop(sample_C.index)
+        extra_C = safe_sample(remaining_C, shortage)
+
+        sample_C = pd.concat([sample_C, extra_C])
+        current_total = len(sample_A) + len(sample_B) + len(sample_C)
+
+    # それでも足りない場合（初期段階など）
+        if current_total < total_needed:
+            shortage = total_needed - current_total
+
+            remaining_B = df_B.drop(sample_B.index)
+            extra_B = safe_sample(remaining_B, shortage)
+
+            sample_B = pd.concat([sample_B, extra_B])
+            current_total = len(sample_A) + len(sample_B) + len(sample_C)
+
+    # 最終的にも足りない場合（ほぼ全C初期状態）
+            if current_total < total_needed:
+                shortage = total_needed - current_total
+
+                used_index = pd.concat([sample_A, sample_B, sample_C]).index
+                remaining_all = df.drop(used_index, errors="ignore")
+                extra_all = safe_sample(remaining_all, shortage)
+
+                st.session_state.data = pd.concat([sample_A, sample_B, sample_C, extra_all])
+
+            else:
+                st.session_state.data = pd.concat([sample_A, sample_B, sample_C])
+    
 
 if "current" not in st.session_state:
     st.session_state.current = None
