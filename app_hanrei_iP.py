@@ -53,6 +53,11 @@ def save_data(df):
 df = load_data()
 
 # ===== 初期化 =====
+def safe_sample(df, n):
+    if len(df) == 0:
+        return df
+    return df.sample(n=min(n, len(df)))
+
 if "data" not in st.session_state:
     df_A = df[df.iloc[:, 3] == 'A']
     df_B = df[df.iloc[:, 3] == 'B']
