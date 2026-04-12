@@ -196,7 +196,11 @@ if st.session_state.show_answer:
             st.rerun()
 
 # ===== 全問終了時の表示 =====
-if st.session_state.data.empty and not st.session_state.queue:
+if (
+    "data" in st.session_state
+    and not st.session_state.data.empty
+    and not st.session_state.queue
+):
     st.success("🎉 すべての問題が終了しました！")
     if st.button("もう一度やる"):
         del st.session_state.data
