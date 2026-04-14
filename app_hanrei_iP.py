@@ -79,7 +79,7 @@ if "data" not in st.session_state:
         extra_all = safe_sample(remaining_all, total_needed - len(result))
         result = pd.concat([result, extra_all])
 
-    st.session_state.data = result
+    st.session_state.data = result.reset_index(drop=True)
 
 # ===== 状態管理 (Queue等を排除したシンプル版) =====
 if "current_q" not in st.session_state:
@@ -144,7 +144,7 @@ if st.session_state.show_answer:
             save_data(df)
 
             # ★ yの場合：正解した問題だけをリスト(data)から削除
-            st.session_state.data = st.session_state.data.drop(idx)
+            st.session_state.data = st.session_state.data.drop(idx).reset_index(drop=True)
             
             st.session_state.current_q = None
             st.session_state.show_answer = False
