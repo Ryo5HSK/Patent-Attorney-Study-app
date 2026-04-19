@@ -139,8 +139,7 @@ if st.session_state.show_answer:
         new_rank = st.selectbox("新しいRank", ["A", "B", "C"], index=["A", "B", "C"].index(current_rank), key="rank")
 
         if st.button("更新して次へ"):
-            idx = row.name 
-            df.at[idx, df.columns[3]] = new_rank
+            df.loc[df["ID"] == row["ID"], "Rank"] = new_rank
             save_data(df)
 
             # ★ yの場合：正解した問題だけをリスト(data)から削除
